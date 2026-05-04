@@ -16,7 +16,8 @@ class Config:
 
     @property
     def ANSWER_KEYS_DIR(self):
-        return os.path.join(self.DATA_DIR, 'answer_keys')
+        # Klíče jsou součástí repozitáře — vždy v data/answer_keys/ vedle config.py
+        return os.path.join(BASE_DIR, 'data', 'answer_keys')
 
     @property
     def SQLALCHEMY_DATABASE_URI(self):

@@ -18,6 +18,14 @@ def _allowed(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+def _render_upload(error_msg=None, **form_values):
+    """Zobrazí formulář, zachová vyplněné hodnoty při chybě."""
+    exercises = Exercise.query.filter_by(is_active=True).all()
+    if error_msg:
+        flash(error_msg, 'danger')
+    return render_template('student/upload.html', exercises=exercises, **form_values)
+
+
 @student_bp.route('/', methods=['GET'])
 def index():
     exercises = Exercise.query.filter_by(is_active=True).all()
@@ -30,23 +38,25 @@ def upload():
     student_class = request.form.get('student_class', '').strip()
     exercise_id = request.form.get('exercise_id', '').strip()
 
+    form_values = dict(
+        prefill_name=student_name,
+        prefill_class=student_class,
+        prefill_exercise=exercise_id,
+    )
+
     if not student_name or not student_class or not exercise_id:
-        flash('Vyplňte prosím všechna pole.', 'danger')
-        return redirect(url_for('student.index'))
+        return _render_upload('Vyplňte prosím všechna pole.', **form_values)
 
     exercise = Exercise.query.get(exercise_id)
     if not exercise or not exercise.is_active:
-        flash('Zvolené cvičení není dostupné.', 'danger')
-        return redirect(url_for('student.index'))
+        return _render_upload('Zvolené cvičení není dostupné.', **form_values)
 
     file = request.files.get('excel_file')
     if not file or file.filename == '':
-        flash('Vyberte prosím soubor.', 'danger')
-        return redirect(url_for('student.index'))
+        return _render_upload('Vyberte prosím soubor.', **form_values)
 
     if not _allowed(file.filename):
-        flash('Nahrávejte pouze soubory ve formátu .xlsx (Excel).', 'danger')
-        return redirect(url_for('student.index'))
+        return _render_upload('Nahrávejte pouze soubory ve formátu .xlsx (Excel).', **form_values)
 
     tmp_filename = f"{uuid.uuid4()}.xlsx"
     tmp_path = os.path.join(current_app.config['UPLOAD_TEMP_DIR'], tmp_filename)
@@ -56,23 +66,24 @@ def upload():
 
         ex_config = EXERCISE_CONFIGS.get(exercise.code)
         if not ex_config:
-            flash('Konfigurace cvičení nebyla nalezena.', 'danger')
-            return redirect(url_for('student.index'))
+            return _render_upload('Konfigurace cvičení nebyla nalezena.', **form_values)
 
         key_path = os.path.join(
             current_app.config['ANSWER_KEYS_DIR'],
             ex_config['answer_key_file'],
         )
         if not os.path.exists(key_path):
-            flash('Soubor s odpověďmi nebyl nalezen na serveru.', 'danger')
-            return redirect(url_for('student.index'))
+            current_app.logger.error(f"Klíč nenalezen: {key_path}")
+            return _render_upload('Soubor s odpověďmi nebyl nalezen na serveru.', **form_values)
 
         result = grade_submission(tmp_path, ex_config, key_path)
 
     except Exception as e:
         current_app.logger.error(f"Chyba při opravování: {e}")
-        flash('Soubor se nepodařilo zpracovat. Zkontrolujte, zda nahráváte správný soubor.', 'danger')
-        return redirect(url_for('student.index'))
+        return _render_upload(
+            'Soubor se nepodařilo zpracovat. Zkontrolujte, zda nahráváte správný soubor.',
+            **form_values,
+        )
     finally:
         if os.path.exists(tmp_path):
             os.remove(tmp_path)

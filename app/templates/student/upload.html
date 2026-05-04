@@ -15,21 +15,25 @@
           <select name="exercise_id" class="form-select" required>
             <option value="">— Vyberte cvičení —</option>
             {% for ex in exercises %}
-              <option value="{{ ex.id }}">{{ ex.name }}</option>
+              <option value="{{ ex.id }}" {% if prefill_exercise|default('') == ex.id|string %}selected{% endif %}>
+                {{ ex.name }}
+              </option>
             {% endfor %}
           </select>
         </div>
 
         <div class="mb-3">
-          <label class="form-label fw-semibold">Jméno</label>
+          <label class="form-label fw-semibold">Jméno a příjmení</label>
           <input type="text" name="student_name" class="form-control"
-                 placeholder="Jan Novák" required maxlength="200">
+                 placeholder="Jan Novák" required maxlength="200"
+                 value="{{ prefill_name|default('') }}">
         </div>
 
         <div class="mb-3">
           <label class="form-label fw-semibold">Třída</label>
           <input type="text" name="student_class" class="form-control"
-                 placeholder="2.A" required maxlength="50">
+                 placeholder="2.A" required maxlength="50"
+                 value="{{ prefill_class|default('') }}">
         </div>
 
         <div class="mb-4">
