@@ -53,12 +53,26 @@ def create_app(config_name=None):
         os.makedirs(app.config['UPLOAD_TEMP_DIR'], exist_ok=True)
         db.create_all()
         _seed_exercises()
+        _seed_teacher()
 
     @app.route('/health')
     def health():
         return 'ok', 200
 
     return app
+
+
+def _seed_teacher():
+    from werkzeug.security import generate_password_hash
+    username = os.environ.get('TEACHER_USERNAME', '').strip()
+    password = os.environ.get('TEACHER_PASSWORD', '').strip()
+    if not username or not password:
+        return
+    teacher = Teacher.query.filter_by(username=username).first()
+    if not teacher:
+        teacher = Teacher(username=username, password_hash=generate_password_hash(password))
+        db.session.add(teacher)
+        db.session.commit()
 
 
 def _seed_exercises():
