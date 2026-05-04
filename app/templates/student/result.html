@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title %}Výsledek — {{ submission.student_name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8 col-lg-7">
+
+    <div class="card p-4 mb-3">
+      <h4 class="mb-1"><i class="bi bi-patch-check me-2 text-success"></i>Výsledek kontroly</h4>
+      <p class="text-muted mb-4">{{ submission.student_name }} &bull; Třída {{ submission.student_class }} &bull; {{ exercise.name }}</p>
+
+      {% set pct = (submission.total_score / submission.max_score * 100) | round(0) | int %}
+      {% set grade = submission.grade %}
+
+      <div class="text-center mb-4">
+        <div class="display-4 fw-bold mb-1">{{ submission.total_score }} / {{ submission.max_score }}</div>
+        <div class="text-muted mb-3">bodů</div>
+        <span class="badge fs-5 px-4 py-2 grade-badge-{{ grade }} text-white">
+          {{ grade }} &ndash; {{ grade_label }}
+        </span>
+      </div>
+
+      <div class="mb-2 d-flex justify-content-between small text-muted">
+        <span>0 %</span><span>{{ pct }} %</span><span>100 %</span>
+      </div>
+      <div class="progress mb-4" style="height:14px;">
+        <div class="progress-bar
+          {% if pct >= 90 %}bg-success
+          {% elif pct >= 75 %}bg-primary
+          {% elif pct >= 60 %}bg-warning
+          {% elif pct >= 40 %}bg-orange
+          {% else %}bg-danger{% endif %}"
+          role="progressbar"
+          style="width: {{ pct }}%">
+        </div>
+      </div>
+
+      <h6 class="mb-3 text-muted">Výsledky po úkolech</h6>
+      <div class="list-group list-group-flush mb-2">
+        {% for task_id, task_name in tasks_meta.items() %}
+          {% set ts = submission.task_scores.get(task_id, 0) %}
+          {% set cfg_task = exercise.submissions[0].task_scores if false else none %}
+          {% set max_pts = namespace(val=0) %}
+          {% for t in exercise.submissions %}{% endfor %}
+          {# find max points from exercise config #}
+          {% set task_score = submission.task_scores.get(task_id, 0) %}
+          {% set task_max = task_score %}
+          {# We'll show score/answered from task_details count #}
+          {% set details = submission.task_details.get(task_id, []) if submission.task_details else [] %}
+          {% set n_correct = details | selectattr('correct') | list | length %}
+          {% set n_total = details | length %}
+          <div class="list-group-item px-0 py-2 border-0 border-bottom">
+            <div class="d-flex justify-content-between align-items-center">
+              <span>{{ task_name }}</span>
+              <span class="fw-semibold">{{ task_score }} / {{ n_total }} b.</span>
+            </div>
+            <div class="progress mt-1" style="height:6px;">
+              <div class="progress-bar bg-primary" style="width: {{ (task_score / n_total * 100) | round | int if n_total else 0 }}%"></div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="text-center">
+      <a href="{{ url_for('student.index') }}" class="btn btn-outline-primary">
+        <i class="bi bi-arrow-left me-1"></i>Odevzdat jiný soubor
+      </a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

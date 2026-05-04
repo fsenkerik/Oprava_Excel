@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}Odevzdat cvičení{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-7 col-lg-6">
+    <div class="card p-4">
+      <h4 class="mb-4"><i class="bi bi-upload me-2 text-primary"></i>Odevzdání cvičení</h4>
+
+      <form method="POST" action="{{ url_for('student.upload') }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Cvičení</label>
+          <select name="exercise_id" class="form-select" required>
+            <option value="">— Vyberte cvičení —</option>
+            {% for ex in exercises %}
+              <option value="{{ ex.id }}">{{ ex.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Jméno</label>
+          <input type="text" name="student_name" class="form-control"
+                 placeholder="Jan Novák" required maxlength="200">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Třída</label>
+          <input type="text" name="student_class" class="form-control"
+                 placeholder="2.A" required maxlength="50">
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Soubor Excel (.xlsx)</label>
+          <input type="file" name="excel_file" class="form-control"
+                 accept=".xlsx" required>
+          <div class="form-text">Maximální velikost: 5 MB. Pouze soubory .xlsx.</div>
+        </div>
+
+        <div class="d-grid">
+          <button type="submit" class="btn btn-primary btn-lg">
+            <i class="bi bi-send me-2"></i>Odeslat ke kontrole
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

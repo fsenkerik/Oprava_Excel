@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}Správa cvičení{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="bi bi-list-check me-2 text-primary"></i>Správa cvičení</h4>
+  <a href="{{ url_for('teacher.dashboard') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Dashboard
+  </a>
+</div>
+
+<div class="card">
+  <table class="table table-hover mb-0 align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>Název cvičení</th>
+        <th class="text-center">Max bodů</th>
+        <th class="text-center">Stav</th>
+        <th class="text-center">Odevzdání</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ex in exercises %}
+      <tr>
+        <td class="fw-semibold">{{ ex.name }}</td>
+        <td class="text-center">{{ ex.max_points }}</td>
+        <td class="text-center">
+          {% if ex.is_active %}
+            <span class="badge bg-success">Aktivní</span>
+          {% else %}
+            <span class="badge bg-secondary">Neaktivní</span>
+          {% endif %}
+        </td>
+        <td class="text-center">{{ ex.submissions|length }}</td>
+        <td class="text-end">
+          <form method="POST" action="{{ url_for('teacher.toggle_exercise', exercise_id=ex.id) }}" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-sm {{ 'btn-outline-secondary' if ex.is_active else 'btn-outline-success' }}">
+              {{ 'Deaktivovat' if ex.is_active else 'Aktivovat' }}
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="alert alert-info mt-3 small">
+  <i class="bi bi-info-circle me-1"></i>
+  Nová cvičení se přidávají přidáním konfigurace do <code>app/exercises.py</code> a nahráním souboru s klíčem do <code>data/answer_keys/</code>.
+</div>
+{% endblock %}
