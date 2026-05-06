@@ -16,6 +16,7 @@ EXERCISE_CONFIGS = {
                 "key_row_end": 11,
                 "max_points": 10,
                 "comparison": "mixed",
+                "requires_formula": False,  # Úkol 1 = text/čísla, vzorec není povinný
             },
             {
                 "id": "task2",
@@ -30,6 +31,7 @@ EXERCISE_CONFIGS = {
                 "key_row_end": 31,
                 "max_points": 12,
                 "comparison": "numeric",
+                "requires_formula": True,
             },
             {
                 "id": "task3",
@@ -44,6 +46,7 @@ EXERCISE_CONFIGS = {
                 "key_row_end": 47,
                 "max_points": 8,
                 "comparison": "numeric",
+                "requires_formula": True,
             },
             {
                 "id": "task4",
@@ -58,12 +61,14 @@ EXERCISE_CONFIGS = {
                 "key_row_end": 67,
                 "max_points": 8,
                 "comparison": "numeric",
+                "requires_formula": True,
             },
             {
                 "id": "task5",
                 "name": "Statistické funkce",
                 "sheet": "Úkol 5",
                 "answer_col": "D",
+                "answer_col2": "E",   # Druhý sloupec — oba musí být vzorce
                 "answer_row_start": 19,
                 "answer_row_end": 28,
                 "key_sheet": "Klíč",
@@ -72,6 +77,7 @@ EXERCISE_CONFIGS = {
                 "key_row_end": 89,
                 "max_points": 10,
                 "comparison": "numeric",
+                "requires_formula": True,
             },
             {
                 "id": "task6",
@@ -86,6 +92,7 @@ EXERCISE_CONFIGS = {
                 "key_row_end": 107,
                 "max_points": 8,
                 "comparison": "numeric",
+                "requires_formula": True,
             },
         ],
     },

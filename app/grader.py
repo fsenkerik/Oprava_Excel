@@ -46,7 +46,13 @@ def _normalize_text(value) -> str:
     return str(value).strip().lower()
 
 
-def _answers_match(student_val, key_val, comparison: str) -> bool:
+def _is_formula(cell_value) -> bool:
+    """Zjistí zda hodnota buňky je vzorec (začíná =)."""
+    return isinstance(cell_value, str) and cell_value.startswith('=')
+
+
+def _values_match(student_val, key_val, comparison: str) -> bool:
+    """Porovná výslednou hodnotu studenta se správnou hodnotou z klíče."""
     if student_val is None or student_val == '':
         return False
     if key_val is None or key_val == '':
@@ -62,7 +68,7 @@ def _answers_match(student_val, key_val, comparison: str) -> bool:
             return False
         return s == k
 
-    # mixed: try numeric first, fall back to text
+    # mixed: zkusí numeric, pak text
     s = _round2(student_val)
     k = _round2(key_val)
     if s is not None and k is not None:
@@ -76,9 +82,13 @@ def _read_column(ws, col_letter: str, row_start: int, row_end: int) -> list:
 
 
 def grade_submission(uploaded_path: str, exercise_config: dict, key_path: str) -> dict:
-    # Open as file objects so handles are released on close (needed on Windows)
+    # Načteme dvakrát:
+    # - formula_wb: data_only=False → vidíme zda buňka obsahuje vzorec (=...)
+    # - values_wb:  data_only=True  → vidíme vypočtený výsledek vzorce
     with open(uploaded_path, 'rb') as f:
-        student_wb = openpyxl.load_workbook(f, data_only=True)
+        formula_wb = openpyxl.load_workbook(f, data_only=False)
+    with open(uploaded_path, 'rb') as f:
+        values_wb = openpyxl.load_workbook(f, data_only=True)
     with open(key_path, 'rb') as f:
         key_wb = openpyxl.load_workbook(f, data_only=True)
 
@@ -92,48 +102,104 @@ def grade_submission(uploaded_path: str, exercise_config: dict, key_path: str) -
         sheet_name = task["sheet"]
         max_pts = task["max_points"]
         comparison = task["comparison"]
+        requires_formula = task.get("requires_formula", False)
+        answer_col2 = task.get("answer_col2")  # Druhý sloupec (Úkol 5)
 
-        if sheet_name not in student_wb.sheetnames:
+        if sheet_name not in values_wb.sheetnames:
             task_scores[tid] = 0
             task_details[tid] = []
             max_score += max_pts
             continue
 
-        student_ws = student_wb[sheet_name]
+        formula_ws = formula_wb[sheet_name]
+        values_ws = values_wb[sheet_name]
         key_ws = key_wb[task["key_sheet"]]
 
-        student_answers = _read_column(
-            student_ws,
-            task["answer_col"],
-            task["answer_row_start"],
-            task["answer_row_end"],
-        )
+        # Správné hodnoty z klíče
         key_answers = _read_column(
-            key_ws,
-            task["key_col"],
-            task["key_row_start"],
-            task["key_row_end"],
+            key_ws, task["key_col"],
+            task["key_row_start"], task["key_row_end"]
         )
 
-        n = len(key_answers)
+        # Odpovědi studenta — hodnoty i vzorce
+        student_formulas = _read_column(
+            formula_ws, task["answer_col"],
+            task["answer_row_start"], task["answer_row_end"]
+        )
+        student_values = _read_column(
+            values_ws, task["answer_col"],
+            task["answer_row_start"], task["answer_row_end"]
+        )
+
+        # Druhý sloupec pro Úkol 5
+        if answer_col2:
+            student_formulas2 = _read_column(
+                formula_ws, answer_col2,
+                task["answer_row_start"], task["answer_row_end"]
+            )
+            student_values2 = _read_column(
+                values_ws, answer_col2,
+                task["answer_row_start"], task["answer_row_end"]
+            )
+        else:
+            student_formulas2 = [None] * len(key_answers)
+            student_values2 = [None] * len(key_answers)
+
         correct_count = 0
         details = []
 
-        for i, (sv, kv) in enumerate(zip(student_answers, key_answers)):
-            correct = _answers_match(sv, kv, comparison)
+        for i, kv in enumerate(key_answers):
+            sf = student_formulas[i]
+            sv = student_values[i]
+
+            if requires_formula:
+                # Musí být vzorec (začíná =)
+                has_formula = _is_formula(sf)
+
+                if answer_col2:
+                    # Úkol 5: oba sloupce musí být vzorce se správným výsledkem
+                    sf2 = student_formulas2[i]
+                    sv2 = student_values2[i]
+                    has_formula2 = _is_formula(sf2)
+                    val_ok = _values_match(sv, kv, comparison)
+                    val_ok2 = _values_match(sv2, kv, comparison)
+                    correct = has_formula and has_formula2 and val_ok and val_ok2
+
+                    if not has_formula or not has_formula2:
+                        reason = "chybí vzorec"
+                    elif not val_ok or not val_ok2:
+                        reason = "špatný výsledek"
+                    else:
+                        reason = "správně"
+                else:
+                    # Standardní: vzorec + správný výsledek
+                    val_ok = _values_match(sv, kv, comparison)
+                    correct = has_formula and val_ok
+
+                    if not has_formula:
+                        reason = "chybí vzorec"
+                    elif not val_ok:
+                        reason = "špatný výsledek"
+                    else:
+                        reason = "správně"
+            else:
+                # Úkol 1: stačí správná hodnota (vzorec není povinný)
+                correct = _values_match(sv, kv, comparison)
+                reason = "správně" if correct else "špatná odpověď"
+
             if correct:
                 correct_count += 1
+
             details.append({
                 "question": i + 1,
-                "student": str(sv) if sv is not None else "",
+                "student": str(sf) if sf is not None else "",
                 "correct": correct,
+                "reason": reason,
             })
 
-        # 1 point per correct answer (matches Excel scoring for this exercise set)
-        task_score = correct_count
-        task_scores[tid] = task_score
+        task_scores[tid] = correct_count
         task_details[tid] = details
-        total_score += task_score
+        total_score += correct_count
         max_score += max_pts
 
     grade = compute_grade(total_score, max_score)
