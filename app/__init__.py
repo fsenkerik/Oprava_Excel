@@ -64,15 +64,31 @@ def create_app(config_name=None):
 
 def _seed_teacher():
     from werkzeug.security import generate_password_hash
+
+    accounts = []
+
     username = os.environ.get('TEACHER_USERNAME', '').strip()
     password = os.environ.get('TEACHER_PASSWORD', '').strip()
-    if not username or not password:
-        return
-    teacher = Teacher.query.filter_by(username=username).first()
-    if not teacher:
-        teacher = Teacher(username=username, password_hash=generate_password_hash(password))
-        db.session.add(teacher)
-        db.session.commit()
+    if username and password:
+        accounts.append((username, password))
+
+    extra_accounts = os.environ.get('TEACHER_ACCOUNTS', '').strip()
+    for item in extra_accounts.split(';'):
+        if not item.strip() or ':' not in item:
+            continue
+        extra_username, extra_password = item.split(':', 1)
+        extra_username = extra_username.strip()
+        extra_password = extra_password.strip()
+        if extra_username and extra_password:
+            accounts.append((extra_username, extra_password))
+
+    for username, password in accounts:
+        teacher = Teacher.query.filter_by(username=username).first()
+        if not teacher:
+            teacher = Teacher(username=username, password_hash=generate_password_hash(password))
+            db.session.add(teacher)
+
+    db.session.commit()
 
 
 def _seed_exercises():
