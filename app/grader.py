@@ -51,6 +51,31 @@ def _is_formula(cell_value) -> bool:
     return isinstance(cell_value, str) and cell_value.startswith('=')
 
 
+def _normalize_formula(formula) -> str:
+    if not _is_formula(formula):
+        return ''
+    return str(formula).replace(' ', '').upper()
+
+
+def _formula_matches_requirements(formula, requirements: dict | None) -> bool:
+    if not requirements:
+        return True
+
+    normalized = _normalize_formula(formula)
+    required_all = requirements.get("all", [])
+    if any(str(token).replace(' ', '').upper() not in normalized for token in required_all):
+        return False
+
+    alternatives = requirements.get("any_all", [])
+    if alternatives:
+        return any(
+            all(str(token).replace(' ', '').upper() in normalized for token in alternative)
+            for alternative in alternatives
+        )
+
+    return True
+
+
 def _values_match(student_val, key_val, comparison: str) -> bool:
     """Porovná výslednou hodnotu studenta se správnou hodnotou z klíče."""
     if student_val is None or student_val == '':
@@ -79,6 +104,52 @@ def _values_match(student_val, key_val, comparison: str) -> bool:
 def _read_column(ws, col_letter: str, row_start: int, row_end: int) -> list:
     col_idx = openpyxl.utils.column_index_from_string(col_letter)
     return [ws.cell(row=r, column=col_idx).value for r in range(row_start, row_end + 1)]
+
+
+def _grade_item_task(formula_ws, values_ws, key_ws, task: dict) -> tuple[int, list]:
+    comparison = task["comparison"]
+    requires_formula = task.get("requires_formula", False)
+    key_col_idx = openpyxl.utils.column_index_from_string(task.get("key_col", "A"))
+
+    correct_count = 0
+    details = []
+
+    for index, item in enumerate(task["items"], start=1):
+        cell_ref = item["cell"]
+        formula_value = formula_ws[cell_ref].value
+        student_value = values_ws[cell_ref].value
+        key_value = key_ws.cell(row=item["key_row"], column=key_col_idx).value
+
+        has_formula = _is_formula(formula_value)
+        value_ok = _values_match(student_value, key_value, comparison)
+        formula_ok = (not requires_formula) or (
+            has_formula and _formula_matches_requirements(formula_value, item.get("formula_requirements"))
+        )
+        correct = value_ok and formula_ok
+
+        if not requires_formula:
+            reason = "správně" if correct else "špatná odpověď"
+        elif not has_formula:
+            reason = "chybí vzorec"
+        elif not formula_ok:
+            reason = "špatná adresace ve vzorci"
+        elif not value_ok:
+            reason = "špatný výsledek"
+        else:
+            reason = "správně"
+
+        if correct:
+            correct_count += 1
+
+        details.append({
+            "question": index,
+            "cell": cell_ref,
+            "student": str(formula_value) if formula_value is not None else "",
+            "correct": correct,
+            "reason": reason,
+        })
+
+    return correct_count, details
 
 
 def grade_submission(uploaded_path: str, exercise_config: dict, key_path: str) -> dict:
@@ -114,6 +185,14 @@ def grade_submission(uploaded_path: str, exercise_config: dict, key_path: str) -
         formula_ws = formula_wb[sheet_name]
         values_ws = values_wb[sheet_name]
         key_ws = key_wb[task["key_sheet"]]
+
+        if "items" in task:
+            correct_count, details = _grade_item_task(formula_ws, values_ws, key_ws, task)
+            task_scores[tid] = correct_count
+            task_details[tid] = details
+            total_score += correct_count
+            max_score += max_pts
+            continue
 
         # Správné hodnoty z klíče
         key_answers = _read_column(
