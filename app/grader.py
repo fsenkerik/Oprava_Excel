@@ -57,19 +57,37 @@ def _normalize_formula(formula) -> str:
     return str(formula).replace(' ', '').upper()
 
 
+def _token_present(normalized_formula: str, token) -> bool:
+    return str(token).replace(' ', '').upper() in normalized_formula
+
+
+def _round_argument_present(normalized_formula: str, argument) -> bool:
+    argument = str(argument).replace(' ', '').upper()
+    return f",{argument})" in normalized_formula or f";{argument})" in normalized_formula
+
+
 def _formula_matches_requirements(formula, requirements: dict | None) -> bool:
     if not requirements:
         return True
 
     normalized = _normalize_formula(formula)
     required_all = requirements.get("all", [])
-    if any(str(token).replace(' ', '').upper() not in normalized for token in required_all):
+    if any(not _token_present(normalized, token) for token in required_all):
+        return False
+
+    required_any_groups = requirements.get("any", [])
+    for group in required_any_groups:
+        if not any(_token_present(normalized, token) for token in group):
+            return False
+
+    round_arg = requirements.get("round_arg")
+    if round_arg is not None and not _round_argument_present(normalized, round_arg):
         return False
 
     alternatives = requirements.get("any_all", [])
     if alternatives:
         return any(
-            all(str(token).replace(' ', '').upper() in normalized for token in alternative)
+            all(_token_present(normalized, token) for token in alternative)
             for alternative in alternatives
         )
 

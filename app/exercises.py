@@ -13,6 +13,103 @@ def _items_from_columns(sheet, rows, columns, key_start, requirements=None):
     return items
 
 
+SUM_FN = ["SUM(", "SUMA("]
+AVERAGE_FN = ["AVERAGE(", "PRŮMĚR("]
+MIN_FN = ["MIN("]
+MAX_FN = ["MAX("]
+ROUND_FN = ["ROUND(", "ZAOKROUHLIT("]
+COUNT_FN = ["COUNT(", "POČET("]
+COUNTA_FN = ["COUNTA(", "POČET2("]
+COUNTBLANK_FN = ["COUNTBLANK(", "POČET.PRÁZDNÝCH("]
+
+
+def _req(*any_groups, all_tokens=None, round_arg=None):
+    requirements = {}
+    if all_tokens:
+        requirements["all"] = list(all_tokens)
+    if any_groups:
+        requirements["any"] = [list(group) for group in any_groups]
+    if round_arg is not None:
+        requirements["round_arg"] = str(round_arg)
+    return requirements
+
+
+def _funkce_items(answer_col, rows, key_start, requirements_by_row):
+    return [
+        {
+            "cell": f"{answer_col}{row}",
+            "key_row": key_start + index,
+            "formula_requirements": requirements_by_row[row],
+        }
+        for index, row in enumerate(rows)
+    ]
+
+
+def _funkce_task4_items():
+    round_args = {
+        9: "1",
+        10: "1",
+        11: "2",
+        12: "-2",
+        13: "2",
+        14: "1",
+        15: "3",
+        16: "0",
+        17: "3",
+        18: "-3",
+    }
+    return [
+        {
+            "cell": f"E{row}",
+            "key_row": 70 + index,
+            "formula_requirements": _req(ROUND_FN, all_tokens=[f"C{row}"], round_arg=arg),
+        }
+        for index, (row, arg) in enumerate(round_args.items())
+    ]
+
+
+def _funkce_task5_items():
+    specs = [
+        (19, 90, _req(ROUND_FN, AVERAGE_FN, round_arg="-2")),
+        (20, 91, _req(MAX_FN, MIN_FN)),
+        (21, 92, _req(ROUND_FN, AVERAGE_FN, round_arg="0")),
+        (22, 93, _req(ROUND_FN, MAX_FN, AVERAGE_FN, round_arg="2")),
+        (23, 94, _req(ROUND_FN, MIN_FN, AVERAGE_FN, round_arg="0")),
+        (24, 95, _req(ROUND_FN, MAX_FN, MIN_FN, round_arg="0")),
+    ]
+    return [
+        {
+            "cell": f"H{row}",
+            "key_row": key_row,
+            "formula_requirements": requirements,
+        }
+        for row, key_row, requirements in specs
+    ]
+
+
+def _funkce_task6_items():
+    specs = [
+        (8, 110, _req(SUM_FN)),
+        (9, 111, _req(ROUND_FN, AVERAGE_FN, round_arg="0")),
+        (10, 112, _req(MAX_FN)),
+        (11, 113, _req(MIN_FN)),
+        (12, 114, _req(SUM_FN)),
+        (13, 115, _req(ROUND_FN, AVERAGE_FN, round_arg="-2")),
+        (14, 116, _req(MAX_FN, MIN_FN)),
+        (15, 117, _req(ROUND_FN, AVERAGE_FN, round_arg="-1")),
+        (16, 118, _req(SUM_FN)),
+        (17, 119, _req(ROUND_FN, SUM_FN, round_arg="1")),
+    ]
+    return [
+        {
+            "cell": f"J{row}",
+            "key_row": key_row,
+            "formula_requirements": requirements,
+        }
+        for row, key_row, requirements in specs
+    ]
+
+
 def _adresace_task2_items():
     items = []
     key_row = 20
@@ -237,6 +334,105 @@ EXERCISE_CONFIGS = {
                 "key_col": "A",
                 "items": _adresace_task6_items(),
                 "max_points": 24,
+                "comparison": "numeric",
+                "requires_formula": True,
+            },
+        ],
+    },
+    "03_Funkce": {
+        "name": "Matematické a statistické funkce - Cvičení 3",
+        "answer_key_file": "03_Funkce.xlsx",
+        "tasks": [
+            {
+                "id": "task1",
+                "name": "Funkce SUMA",
+                "sheet": "Úkol 1",
+                "key_sheet": "Klíč",
+                "key_col": "A",
+                "items": _funkce_items("H", range(17, 27), 10, {
+                    17: _req(SUM_FN),
+                    18: _req(SUM_FN),
+                    19: _req(SUM_FN),
+                    20: _req(SUM_FN),
+                    21: _req(SUM_FN),
+                    22: _req(SUM_FN),
+                    23: _req(MIN_FN),
+                    24: _req(SUM_FN),
+                    25: _req(AVERAGE_FN),
+                    26: _req(AVERAGE_FN),
+                }),
+                "max_points": 10,
+                "comparison": "numeric",
+                "requires_formula": True,
+            },
+            {
+                "id": "task2",
+                "name": "PRŮMĚR, MIN, MAX",
+                "sheet": "Úkol 2",
+                "key_sheet": "Klíč",
+                "key_col": "A",
+                "items": _funkce_items("I", range(20, 28), 30, {
+                    20: _req(AVERAGE_FN),
+                    21: _req(MAX_FN),
+                    22: _req(MIN_FN),
+                    23: _req(AVERAGE_FN),
+                    24: _req(AVERAGE_FN),
+                    25: _req(MAX_FN, MIN_FN),
+                    26: _req(AVERAGE_FN),
+                    27: _req(SUM_FN),
+                }),
+                "max_points": 8,
+                "comparison": "numeric",
+                "requires_formula": True,
+            },
+            {
+                "id": "task3",
+                "name": "POČET, POČET2, POČET.PRÁZDNÝCH",
+                "sheet": "Úkol 3",
+                "key_sheet": "Klíč",
+                "key_col": "A",
+                "items": _funkce_items("J", range(8, 14), 50, {
+                    8: _req(COUNT_FN),
+                    9: _req(COUNTA_FN),
+                    10: _req(COUNTBLANK_FN),
+                    11: _req(COUNT_FN),
+                    12: _req(COUNTBLANK_FN),
+                    13: _req(COUNTA_FN),
+                }),
+                "max_points": 6,
+                "comparison": "numeric",
+                "requires_formula": True,
+            },
+            {
+                "id": "task4",
+                "name": "ZAOKROUHLIT",
+                "sheet": "Úkol 4",
+                "key_sheet": "Klíč",
+                "key_col": "A",
+                "items": _funkce_task4_items(),
+                "max_points": 10,
+                "comparison": "numeric",
+                "requires_formula": True,
+            },
+            {
+                "id": "task5",
+                "name": "Kombinace funkcí",
+                "sheet": "Úkol 5",
+                "key_sheet": "Klíč",
+                "key_col": "A",
+                "items": _funkce_task5_items(),
+                "max_points": 6,
+                "comparison": "numeric",
+                "requires_formula": True,
+            },
+            {
+                "id": "task6",
+                "name": "Komplexní úloha",
+                "sheet": "Úkol 6",
+                "key_sheet": "Klíč",
+                "key_col": "A",
+                "items": _funkce_task6_items(),
+                "max_points": 10,
                 "comparison": "numeric",
                 "requires_formula": True,
             },
