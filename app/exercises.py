@@ -21,6 +21,11 @@ ROUND_FN = ["ROUND(", "ZAOKROUHLIT("]
 COUNT_FN = ["COUNT(", "POČET("]
 COUNTA_FN = ["COUNTA(", "POČET2("]
 COUNTBLANK_FN = ["COUNTBLANK(", "POČET.PRÁZDNÝCH("]
+IF_FN = ["IF(", "KDYŽ("]
+AND_FN = ["AND(", "A("]
+OR_FN = ["OR(", "NEBO("]
+COUNTIF_FN = ["COUNTIF(", "COUNTIF("]
+SUMIF_FN = ["SUMIF(", "SUMIF("]
 
 
 def _req(*any_groups, all_tokens=None, round_arg=None):
@@ -167,6 +172,94 @@ def _adresace_task6_items():
         })
         key_row += 1
     return items
+
+
+def _logicke_task1_items():
+    return [
+        {
+            "cell": f"D{row}",
+            "key_row": 10 + index,
+            "formula_requirements": _req(IF_FN, [">=30", ">29"]),
+        }
+        for index, row in enumerate(range(9, 19))
+    ]
+
+
+def _logicke_task2_items():
+    return [
+        {
+            "cell": f"E{row}",
+            "key_row": 20 + index,
+            "formula_requirements": _req(IF_FN, [">=10", ">9"]),
+        }
+        for index, row in enumerate(range(9, 17))
+    ]
+
+
+def _logicke_task3_items():
+    req = _req(IF_FN, [">=90", ">89"], [">=75", ">74"], [">=60", ">59"], [">=40", ">39"])
+    return [
+        {
+            "cell": f"D{row}",
+            "key_row": 40 + index,
+            "formula_requirements": req,
+        }
+        for index, row in enumerate(range(9, 21))
+    ]
+
+
+def _logicke_task4_items():
+    # Část 1: E9:E15 — KDYŽ s A, podmínka >1500 nebo >=1501
+    items = [
+        {
+            "cell": f"E{row}",
+            "key_row": 60 + index,
+            "formula_requirements": _req(IF_FN, AND_FN, [">1500", ">=1501"]),
+        }
+        for index, row in enumerate(range(9, 16))
+    ]
+    # Část 2: E23:E29 — KDYŽ s NEBO, musí být obě "Sobota" i "Neděle"
+    items += [
+        {
+            "cell": f"E{row}",
+            "key_row": 70 + index,
+            "formula_requirements": _req(IF_FN, OR_FN, all_tokens=["Sobota", "Neděle"]),
+        }
+        for index, row in enumerate(range(23, 30))
+    ]
+    return items
+
+
+def _logicke_task5_items():
+    return [
+        {
+            "cell": f"F{row}",
+            "key_row": 80 + index,
+            "formula_requirements": _req(COUNTIF_FN),
+        }
+        for index, row in enumerate(range(8, 16))
+    ]
+
+
+def _logicke_task6_items():
+    specs = [
+        (8,  100, _req(SUMIF_FN, all_tokens=["jídlo"])),
+        (9,  101, _req(SUMIF_FN, all_tokens=["doprava"])),
+        (10, 102, _req(SUMIF_FN, all_tokens=["zábava"])),
+        (11, 103, _req(SUMIF_FN, all_tokens=["oblečení"])),
+        (12, 104, _req(SUMIF_FN, [">=1000", ">999"])),
+        (13, 105, _req(COUNTIF_FN, all_tokens=["jídlo"])),
+        (14, 106, _req(COUNTIF_FN, all_tokens=["zábava"])),
+        (15, 107, _req(SUMIF_FN, all_tokens=["<>"])),
+    ]
+    return [
+        {
+            "cell": f"G{row}",
+            "key_row": key_row,
+            "formula_requirements": req,
+        }
+        for row, key_row, req in specs
+    ]
 
 
 EXERCISE_CONFIGS = {
@@ -334,6 +427,78 @@ EXERCISE_CONFIGS = {
                 "key_col": "A",
                 "items": _adresace_task6_items(),
                 "max_points": 24,
+                "comparison": "numeric",
+                "requires_formula": True,
+            },
+        ],
+    },
+    "03_Logicke": {
+        "name": "Logické funkce - Cvičení 3",
+        "answer_key_file": "03_Logicke.xlsx",
+        "tasks": [
+            {
+                "id": "task1",
+                "name": "Funkce KDYŽ",
+                "sheet": "Úkol 1",
+                "key_sheet": "Klíč",
+                "key_col": "A",
+                "items": _logicke_task1_items(),
+                "max_points": 10,
+                "comparison": "text",
+                "requires_formula": True,
+            },
+            {
+                "id": "task2",
+                "name": "KDYŽ s číselným výstupem",
+                "sheet": "Úkol 2",
+                "key_sheet": "Klíč",
+                "key_col": "A",
+                "items": _logicke_task2_items(),
+                "max_points": 8,
+                "comparison": "numeric",
+                "requires_formula": True,
+            },
+            {
+                "id": "task3",
+                "name": "Vnořené KDYŽ",
+                "sheet": "Úkol 3",
+                "key_sheet": "Klíč",
+                "key_col": "A",
+                "items": _logicke_task3_items(),
+                "max_points": 12,
+                "comparison": "numeric",
+                "requires_formula": True,
+            },
+            {
+                "id": "task4",
+                "name": "KDYŽ s A/NEBO",
+                "sheet": "Úkol 4",
+                "key_sheet": "Klíč",
+                "key_col": "A",
+                "items": _logicke_task4_items(),
+                "max_points": 14,
+                "comparison": "text",
+                "requires_formula": True,
+            },
+            {
+                "id": "task5",
+                "name": "COUNTIF",
+                "sheet": "Úkol 5",
+                "key_sheet": "Klíč",
+                "key_col": "A",
+                "items": _logicke_task5_items(),
+                "max_points": 8,
+                "comparison": "numeric",
+                "requires_formula": True,
+            },
+            {
+                "id": "task6",
+                "name": "SUMIF",
+                "sheet": "Úkol 6",
+                "key_sheet": "Klíč",
+                "key_col": "A",
+                "items": _logicke_task6_items(),
+                "max_points": 8,
                 "comparison": "numeric",
                 "requires_formula": True,
             },
