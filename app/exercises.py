@@ -235,7 +235,8 @@ def _logicke_task5_items():
         {
             "cell": f"F{row}",
             "key_row": 80 + index,
-            "formula_requirements": _req(COUNTIF_FN),
+            # F15 (index 7): "Kolik žáků psalo test?" — =COUNT() i =COUNTIF() jsou platné
+            "formula_requirements": _req(COUNT_FN) if index == 7 else _req(COUNTIF_FN),
         }
         for index, row in enumerate(range(8, 16))
     ]
