@@ -26,6 +26,14 @@ AND_FN = ["AND(", "A("]
 OR_FN = ["OR(", "NEBO("]
 COUNTIF_FN = ["COUNTIF(", "COUNTIF("]
 SUMIF_FN = ["SUMIF(", "SUMIF("]
+LEN_FN = ["LEN(", "DÉLKA("]
+LEFT_FN = ["LEFT(", "LEVÝ(", "ZLEVA("]
+RIGHT_FN = ["RIGHT(", "PRAVÝ(", "ZPRAVA("]
+MID_FN = ["MID(", "ČÁST("]
+SEARCH_FN = ["SEARCH(", "HLEDAT(", "NAJÍT("]
+UPPER_FN = ["UPPER(", "VELKÁ("]
+LOWER_FN = ["LOWER(", "MALÁ("]
+CONCATENATE_FN = ["CONCATENATE(", "&"]
 
 
 def _req(*any_groups, all_tokens=None, round_arg=None):
@@ -261,6 +269,69 @@ def _logicke_task6_items():
         }
         for row, key_row, req in specs
     ]
+
+
+def _textove_task1_items():
+    # Úkol 1: C=LEN, D=LEFT, E=RIGHT, rows 8-15, klíč A6-A29 (po 3)
+    items = []
+    key_row = 6
+    for row in range(8, 16):
+        items.append({"cell": f"C{row}", "key_row": key_row,     "formula_requirements": _req(LEN_FN)})
+        items.append({"cell": f"D{row}", "key_row": key_row + 1, "formula_requirements": _req(LEFT_FN)})
+        items.append({"cell": f"E{row}", "key_row": key_row + 2, "formula_requirements": _req(RIGHT_FN)})
+        key_row += 3
+    return items
+
+
+def _textove_task2_items():
+    # Úkol 2 část 1: D8:D11 = MID, klíč A30-A33
+    items = [
+        {"cell": f"D{row}", "key_row": 30 + i, "formula_requirements": _req(MID_FN)}
+        for i, row in enumerate(range(8, 12))
+    ]
+    # Úkol 2 část 2: D18:D21 = SEARCH, klíč A34-A37
+    items += [
+        {"cell": f"D{row}", "key_row": 34 + i, "formula_requirements": _req(SEARCH_FN)}
+        for i, row in enumerate(range(18, 22))
+    ]
+    return items
+
+
+def _textove_task3_items():
+    # Úkol 3: C=Jméno(LEFT+SEARCH), D=Příjmení(MID+SEARCH), E=email(MID+SEARCH)
+    # klíč A38-A55 (po 3, interleaved C/D/E)
+    items = []
+    key_row = 38
+    for row in range(8, 14):
+        items.append({"cell": f"C{row}", "key_row": key_row,     "formula_requirements": _req(LEFT_FN, SEARCH_FN)})
+        items.append({"cell": f"D{row}", "key_row": key_row + 1, "formula_requirements": _req(MID_FN, SEARCH_FN)})
+        items.append({"cell": f"E{row}", "key_row": key_row + 2, "formula_requirements": _req(MID_FN, SEARCH_FN)})
+        key_row += 3
+    return items
+
+
+def _textove_task4_items():
+    # Úkol 4: F=spojení(CONCATENATE nebo &), G=ID kód(UPPER+LEFT+CONCATENATE/&)
+    # klíč A56-A71 (F/G střídavě)
+    items = []
+    key_row = 56
+    for row in range(8, 16):
+        items.append({"cell": f"F{row}", "key_row": key_row,     "formula_requirements": _req(CONCATENATE_FN)})
+        items.append({"cell": f"G{row}", "key_row": key_row + 1, "formula_requirements": _req(UPPER_FN, LEFT_FN, CONCATENATE_FN)})
+        key_row += 2
+    return items
+
+
+def _textove_task5_items():
+    # Úkol 5: E=ID kód(UPPER+CONCATENATE/&), F=email(LOWER+CONCATENATE/&)
+    # klíč A84-A95 (E/F střídavě)
+    items = []
+    key_row = 84
+    for row in range(9, 15):
+        items.append({"cell": f"E{row}", "key_row": key_row,     "formula_requirements": _req(UPPER_FN, CONCATENATE_FN)})
+        items.append({"cell": f"F{row}", "key_row": key_row + 1, "formula_requirements": _req(LOWER_FN, CONCATENATE_FN)})
+        key_row += 2
+    return items
 
 
 EXERCISE_CONFIGS = {
@@ -501,6 +572,67 @@ EXERCISE_CONFIGS = {
                 "items": _logicke_task6_items(),
                 "max_points": 8,
                 "comparison": "numeric",
+                "requires_formula": True,
+            },
+        ],
+    },
+    "03_Textove": {
+        "name": "Textové funkce - Cvičení 3",
+        "answer_key_file": "03_Textove.xlsx",
+        "tasks": [
+            {
+                "id": "task1",
+                "name": "DÉLKA, LEVÝ, PRAVÝ",
+                "sheet": "Úkol 1",
+                "key_sheet": "Klíč",
+                "key_col": "A",
+                "items": _textove_task1_items(),
+                "max_points": 24,
+                "comparison": "mixed",
+                "requires_formula": True,
+            },
+            {
+                "id": "task2",
+                "name": "ČÁST a HLEDAT",
+                "sheet": "Úkol 2",
+                "key_sheet": "Klíč",
+                "key_col": "A",
+                "items": _textove_task2_items(),
+                "max_points": 8,
+                "comparison": "mixed",
+                "requires_formula": True,
+            },
+            {
+                "id": "task3",
+                "name": "Rozdělení řádku",
+                "sheet": "Úkol 3",
+                "key_sheet": "Klíč",
+                "key_col": "A",
+                "items": _textove_task3_items(),
+                "max_points": 18,
+                "comparison": "text",
+                "requires_formula": True,
+            },
+            {
+                "id": "task4",
+                "name": "Spojování textu a ID kódy",
+                "sheet": "Úkol 4",
+                "key_sheet": "Klíč",
+                "key_col": "A",
+                "items": _textove_task4_items(),
+                "max_points": 16,
+                "comparison": "text",
+                "requires_formula": True,
+            },
+            {
+                "id": "task5",
+                "name": "Kapitánský úkol",
+                "sheet": "Úkol 5",
+                "key_sheet": "Klíč",
+                "key_col": "A",
+                "items": _textove_task5_items(),
+                "max_points": 12,
+                "comparison": "text",
                 "requires_formula": True,
             },
         ],
